@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mayank Electronics Store</title>
+
+<style>
+body{
+  font-family: Arial;
+  margin:0;
+  background:#f2f2f2;
+}
+
+/* HEADER */
+header{
+  background:#111;
+  color:white;
+  padding:15px;
+  text-align:center;
+  font-size:20px;
+}
+
+/* SEARCH */
+.searchBox{
+  padding:10px;
+  background:white;
+}
+
+.searchBox input{
+  width:100%;
+  padding:10px;
+  font-size:16px;
+}
+
+/* CATEGORY */
+.tabs{
+  display:flex;
+  overflow:auto;
+  background:#ddd;
+}
+
+.tabs button{
+  padding:10px;
+  border:none;
+  background:#ddd;
+  cursor:pointer;
+}
+
+.tabs button.active{
+  background:#25D366;
+  color:white;
+}
+
+/* PRODUCTS */
+.products{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+  padding:12px;
+}
+
+.card{
+  background:white;
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+
+.card img{
+  width:100%;
+  height:120px;
+  object-fit:cover;
+}
+
+.qty{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+}
+
+.qty button{
+  width:28px;
+}
+
+.addBtn{
+  background:#25D366;
+  color:white;
+  width:100%;
+  margin-top:6px;
+}
+
+/* CART */
+.cart{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:white;
+  padding:10px;
+  box-shadow:0 -2px 8px rgba(0,0,0,0.3);
+}
+
+.orderBtn{
+  width:100%;
+  background:#25D366;
+  color:white;
+  padding:12px;
+  font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+Mayank Electronics Spare Parts
+</header>
+
+<div class="searchBox">
+<input type="text" placeholder="Search product..." onkeyup="searchProduct(this.value)">
+</div>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="products" id="products"></div>
+
+<div class="cart">
+🛒 Cart Items: <span id="count">0</span>
+<button class="orderBtn" onclick="sendWhatsApp()">Order on WhatsApp</button>
+</div>
+
+<script>
+
+const phone = "91XXXXXXXXXX"; // PUT YOUR NUMBER
+
+/* ===== PRODUCTS ===== */
+const productList = [
+
+{cat:"IC", name:"IR2110 IC", price:120, img:"https://via.placeholder.com/200?text=IR2110"},
+{cat:"IC", name:"NE5532 IC", price:25, img:"https://via.placeholder.com/200?text=NE5532"},
+{cat:"IC", name:"TL072 IC", price:18, img:"https://via.placeholder.com/200?text=TL072"},
+
+{cat:"Capacitor", name:"100uF Capacitor", price:5, img:"https://via.placeholder.com/200?text=100uF"},
+{cat:"Capacitor", name:"470uF Capacitor", price:10, img:"https://via.placeholder.com/200?text=470uF"},
+
+{cat:"PCB", name:"Amplifier PCB", price:60, img:"https://via.placeholder.com/200?text=PCB"},
+{cat:"PCB", name:"SMPS PCB", price:80, img:"https://via.placeholder.com/200?text=SMPS"},
+
+{cat:"Other", name:"IRFZ44N MOSFET", price:45, img:"https://via.placeholder.com/200?text=MOSFET"},
+{cat:"Other", name:"1N4148 Diode", price:2, img:"https://via.placeholder.com/200?text=Diode"},
+{cat:"Other", name:"10K Resistor", price:1, img:"https://via.placeholder.com/200?text=Resistor"}
+
+];
+
+let cart = {};
+let currentCat="All";
+
+const productsDiv = document.getElementById("products");
+const tabsDiv = document.getElementById("tabs");
+
+/* ===== CREATE CATEGORIES ===== */
+const categories = ["All", ...new Set(productList.map(p=>p.cat))];
+
+categories.forEach(cat=>{
+  let btn = document.createElement("button");
+  btn.innerText=cat;
+  btn.onclick=()=>filterCategory(cat,btn);
+  if(cat=="All") btn.classList.add("active");
+  tabsDiv.appendChild(btn);
+});
+
+/* ===== FILTER CATEGORY ===== */
+function filterCategory(cat,btn){
+  currentCat=cat;
+
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+
+  showProducts();
+}
+
+/* ===== SHOW PRODUCTS ===== */
+function showProducts(search=""){
+  productsDiv.innerHTML="";
+
+  productList.forEach((p,i)=>{
+
+    if(currentCat!="All" && p.cat!=currentCat) return;
+    if(!p.name.toLowerCase().includes(search.toLowerCase())) return;
+
+    productsDiv.innerHTML+=`
+      <div class="card">
+        <img src="${p.img}">
+        <h4>${p.name}</h4>
+        <p>₹${p.price}</p>
+
+        <div class="qty">
+          <button onclick="changeQty(${i},-1)">-</button>
+          <span id="q${i}">1</span>
+          <button onclick="changeQty(${i},1)">+</button>
+        </div>
+
+        <button class="addBtn" onclick="addToCart(${i})">Add</button>
+      </div>
+    `;
+  });
+}
+
+showProducts();
+
+/* ===== SEARCH ===== */
+function searchProduct(val){
+  showProducts(val);
+}
+
+/* ===== QUANTITY ===== */
+function changeQty(i,val){
+  let el=document.getElementById("q"+i);
+  let q=parseInt(el.innerText)+val;
+  if(q<1) q=1;
+  el.innerText=q;
+}
+
+/* ===== ADD CART ===== */
+function addToCart(i){
+  let qty=parseInt(document.getElementById("q"+i).innerText);
+  cart[i]=(cart[i]||0)+qty;
+  updateCount();
+}
+
+/* ===== COUNT ===== */
+function updateCount(){
+  let total=0;
+  for(let k in cart) total+=cart[k];
+  document.getElementById("count").innerText=total;
+}
+
+/* ===== WHATSAPP ORDER ===== */
+function sendWhatsApp(){
+
+  if(Object.keys(cart).length==0){
+    alert("Cart empty!");
+    return;
+  }
+
+  let msg="Hello, I want to order:%0A%0A";
+  let total=0;
+
+  for(let i in cart){
+    let p=productList[i];
+    let qty=cart[i];
+    msg+=`${p.name} x ${qty} = ₹${p.price*qty}%0A`;
+    total+=p.price*qty;
+  }
+
+  msg+=`%0ATotal = ₹${total}`;
+
+  window.open(`https://wa.me/${phone}?text=${msg}`);
+}
+
+</script>
+
+</body>
+</html>
